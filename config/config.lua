@@ -1,5 +1,5 @@
 Config = {}
-Config.Version = '1.1.0'
+Config.Version = '1.1.1'
 Config.Interaction = 'ped' -- ped = ox_target; marker = oude cirkel met E
 Config.Price = 5000 -- MAXIMUM reparatieprijs, niet langer een vast bedrag
 Config.MinPrice = 250 -- minimumtarief, ook voor alleen banden/ruitenschade
@@ -44,6 +44,7 @@ Config.UpdateCheck = {
     IntervalHours = 6, -- 0 = alleen bij opstarten
 }
 Config.PedDeath = {
+    Debug = false, -- alleen voor diagnose: onbekende dader in serverconsole
     Compensation = 10000, -- schadevergoeding per gedode reparateur
     Account = 'bank', -- bank of cash; onvoldoende saldo blijft als schuld bewaard
     Society = 'society_police',

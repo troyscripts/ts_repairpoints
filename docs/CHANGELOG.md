@@ -1,3 +1,12 @@
+# 1.1.1 — 2026-11-04
+
+- Webhookdiagnose: geweigerde bridge-aanvragen worden niet langer stil genegeerd. Consolecontrole ts_repairpoints_webhookcheck toont schakelaars, resourcenaam en laatste resultaat per route.
+
+- Webhooks via ts_bridge voor gedode reparateur, geslaagde plaatsing en verwijdering.
+- Foto per gebeurtenis instelbaar; onbekende dader wordt niet als speler aangewezen.
+- Logging na geslaagd opslaan; webhookfouten blokkeren geen spelactie of vergoeding.
+- Configversie 1.1.1; eerdere doodcontrole- en wegloopfixes behouden.
+
 # Changelog
 ## 1.1.0
 - Vertrek hersteld: stilsta-taak direct afbreken, standaard vrij wegwandelen en bij geblokkeerde vertrekroute overschakelen op wandelen. Dienstcontrole ongewijzigd.
@@ -18,3 +27,5 @@
 - ESX dienstcontrole, marker/blipstatus en Nederlandse bediening.
 - Instelbare prijs, standaard 5000 euro, volledige opbrengst naar society_mechanic via ts_bridge.
 - Servervalidatie, cooldown en eenmalige afronding; terugbetaling bij bevestigde mislukte societybijschrijving.
+
+- Doodcontrole wacht op ingeladen ped en bevestigt nul-health opnieuw; tijdelijke nulwaarden veroorzaken geen doodmelding of respawn. Onbekende-daderlog alleen met Config.PedDeath.Debug = true. Versie blijft 1.1.0.

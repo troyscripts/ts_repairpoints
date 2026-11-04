@@ -1,9 +1,9 @@
-# ts_repairpoints — 1.1.0
+# ts_repairpoints — 1.1.1
 Reparatiepunten voor ESX met een optionele monteur-ped, ox_target, schadeafhankelijke prijzen en societybetalingen via ts_bridge. Nederlandse bediening.
 
 ## Installeren / bijwerken
 1. Bewaar je bestaande `data/points.json` en, bij volgende updates, `data/compensation.json`. Deze bestanden worden bewust niet als lege bestanden meegeleverd.
-2. Vervang de scriptbestanden en neem jouw jobnamen, society, dienstkoppeling en vaste locaties over in de nieuwe config. Configversie: 1.1.0.
+2. Vervang de scriptbestanden en neem jouw jobnamen, society, dienstkoppeling en vaste locaties over in de nieuwe config. Configversie: 1.1.1.
 3. Vereist: OneSync, es_extended, ox_lib, ts_bridge en voor ped-punten ox_target. Start banking en esx_addonaccount vóór ts_bridge. Gebruik een actueel FiveM-serverartifact met server-side CreatePed, GetVehicleEngineHealth, GetVehicleBodyHealth en GetPedSourceOfDeath.
 4. Start na deze dependencies: `ensure ts_repairpoints`. Bij uitsluitend marker-punten is ox_target niet nodig.
 
@@ -97,7 +97,7 @@ Er is geen aangenomen Sky-export gebruikt. Als jullie Sky-versie uitsluitend een
 ## Versiechecker
 Config.UpdateCheck staat standaard aan voor `troyscripts/ts_repairpoints`, branch `main`. De checker leest uitsluitend de version-regel uit het publieke fxmanifest.lua op GitHub. Geen extra version.json nodig, geen code-uitvoering of automatische installatie. Controle bij opstart en standaard elke 6 uur (IntervalHours = 0: alleen opstart). HTTP-fouten/time-outs stoppen de resource niet.
 
-Wanneer deze lokale 1.1.0 nog niet op GitHub staat, meldt de checker terecht dat lokaal nieuwer is dan online. Zodra je de update uploadt naar main, gebruikt de checker dat nieuwe manifest. Deze zip publiceert zichzelf niet op GitHub.
+Wanneer deze lokale 1.1.1 nog niet op GitHub staat, meldt de checker terecht dat lokaal nieuwer is dan online. Zodra je de update uploadt naar main, gebruikt de checker dat nieuwe manifest. Deze zip publiceert zichzelf niet op GitHub.
 
 ## Betalingsherstel en gegevens bewaren
 Reparatiebetalingen gebruiken de gecontroleerde ts_bridge-resultaten `{ ok, uncertain }`. Bij een bevestigde mislukte mechanic-bijschrijving wordt terugbetaling geprobeerd. Onzekere uitkomsten stoppen automatische herhaling en geven BETALING CONTROLEREN in de console.
@@ -110,3 +110,6 @@ Verwijder of overschrijf compensation.json niet bij updates: daardoor zouden sch
 Lua 5.4-syntax en gesimuleerde scenario's gecontroleerd voor prijsgrenzen, societyboekingen, offerteverloop, beide interacties, dienstwisselingen, voertuigslots, pedbeweging/eigenaarmigratie, moord/aanrijding, dubbele doodmeldingen, schuldinning, herstart en versiecheckerfouten. Geen live FiveM-test uitgevoerd.
 
 Test vóór livegebruik: beide interacties; dichtbij/te ver geparkeerde auto; offerte annuleren; schadeprijs en mechanic-saldo; mechanic in/uit dienst tijdens reparatie; vertrekroute; moord en aanrijding met twee spelers; precies één politiebericht en €10.000 bijschrijving; onvoldoende saldo gevolgd door reconnect/herstart; respawn; behoud van data bij update.
+
+## Webhooks
+Zie [docs/WEBHOOKS.md](docs/WEBHOOKS.md) voor de drie routes en foto-instellingen. Gebruik ts_bridge 1.1.4.

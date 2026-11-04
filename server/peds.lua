@@ -89,8 +89,11 @@ local function processDeath(id, e, p)
     local who = e.killerIdentifier or sourceOfDeath(e.entity)
     -- Alleen een recente lethal-hit als noodpad, en uitsluitend bij bevestigde dood.
     if not who and hit and hit.lethal and e.deathTick - hit.time <= 5000 and e.deathTick - hit.time >= -3000 then who = hit.identifier end
+    if RepairLogEvent then RepairLogEvent('murder', p, nil, who, coords) end
     if who then RepairCreateCompensation(who, id)
-    else print('[ts_repairpoints] Dood reparateur ' .. id .. ': geen bevestigde speler als dader; niemand automatisch belast.') end
+    elseif Config.PedDeath.Debug == true then
+        print('[ts_repairpoints] Dood reparateur ' .. id .. ': geen bevestigde speler als dader; niemand automatisch belast.')
+    end
     attacks[e.netId] = nil
 end
 CreateThread(function()
@@ -104,16 +107,36 @@ CreateThread(function()
                 remove(id); p.pedNetId = nil; RepairServer.sync()
             else
                 if p.pedNetId ~= e.netId then p.pedNetId = e.netId; RepairServer.sync() end
-                if not e.deadAt and GetEntityHealth(e.entity) <= 0 then
-                    e.deadAt, e.deathTick = os.time(), GetGameTimer()
-                    e.killerIdentifier = sourceOfDeath(e.entity)
-                    FreezeEntityPosition(e.entity, false)
-                    RepairServer.abortPoint(id, 'De reparateur is overleden. De reparatie is afgebroken.')
+                local health = GetEntityHealth(e.entity)
+                local owner = NetworkGetEntityOwner(e.entity)
+                local simulated = owner and owner > 0 and GetPlayerName(owner) ~= nil
+                if simulated and health > 0 then
+                    e.seenAlive = true
+                    -- Tijdelijke/nog niet gesynchroniseerde nulwaarde is geen overlijden.
+                    if not e.processed then
+                        e.deadAt, e.deathTick, e.killerIdentifier = nil, nil, nil
+                    end
+                end
+                if not e.deadAt and simulated and health <= 0 then
+                    local killer = sourceOfDeath(e.entity)
+                    local hit = attacks[e.netId]
+                    local recentLethal = hit and hit.lethal and GetGameTimer() - hit.time >= 0
+                        and GetGameTimer() - hit.time <= 5000
+                    -- Een nog nooit ingeladen ped heeft mogelijk ook health 0.
+                    -- Een bevestigde dader/lethal-hit dekt direct doden na het inladen.
+                    if e.seenAlive or killer or recentLethal then
+                        e.deadAt, e.deathTick = os.time(), GetGameTimer()
+                        e.killerIdentifier = killer
+                    end
                 end
                 if e.deadAt then
                     -- Geef de schadesynchronisatie kort tijd om de doodsoorzaak door te geven.
-                    if not e.processed and GetGameTimer() - e.deathTick >= 2000 then processDeath(id, e, p) end
-                    if os.time() - e.deadAt >= Config.PedDeath.RespawnSeconds then
+                    if not e.processed and simulated and health <= 0 and GetGameTimer() - e.deathTick >= 2000 then
+                        FreezeEntityPosition(e.entity, false)
+                        RepairServer.abortPoint(id, 'De reparateur is overleden. De reparatie is afgebroken.')
+                        processDeath(id, e, p)
+                    end
+                    if e.processed and os.time() - e.deadAt >= Config.PedDeath.RespawnSeconds then
                         remove(id); p.pedNetId = nil; spawn(id, p)
                     end
                 end

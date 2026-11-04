@@ -178,6 +178,7 @@ RegisterCommand('reparatiepunt', function(src, args)
         table.sort(lines)
         return notify(src, #lines > 0 and table.concat(lines, '\n') or 'Er zijn nog geen reparatiepunten.', 'inform')
     end
+    local logAction, logPoint
     local previous = json.encode(placed)
     if args[1] == 'plaatsen' then
         local ped = GetPlayerPed(src)
@@ -188,6 +189,7 @@ RegisterCommand('reparatiepunt', function(src, args)
         while points[id] do suffix = suffix + 1; id = 'placed_' .. os.time() .. '_' .. suffix end
         local label = table.concat(args, ' ', 2)
         placed[#placed + 1] = { id = id, label = label ~= '' and label:sub(1, 60) or 'Reparatiepunt', coords = { x = c.x, y = c.y, z = c.z }, heading = GetEntityHeading(ped) }
+        logAction, logPoint = 'placed', placed[#placed]
     elseif args[1] == 'vertrek' then
         local found
         local c = GetEntityCoords(GetPlayerPed(src))
@@ -200,7 +202,7 @@ RegisterCommand('reparatiepunt', function(src, args)
         if not found then return notify(src, 'Onbekend ID. Vaste punten wijzig je in de config.') end
     elseif args[1] == 'verwijderen' then
         local found
-        for i, p in ipairs(placed) do if p.id == args[2] then table.remove(placed, i); found = true; break end end
+        for i, p in ipairs(placed) do if p.id == args[2] then logAction, logPoint = 'removed', p; table.remove(placed, i); found = true; break end end
         if not found then return notify(src, 'Onbekend ID. Vaste punten verwijder je in de config.') end
     else
         return notify(src, '/reparatiepunt plaatsen [naam] | lijst | verwijderen [id] | vertrek [id]', 'inform')
@@ -212,6 +214,7 @@ RegisterCommand('reparatiepunt', function(src, args)
         return notify(src, 'Opslaan mislukt. Controleer schrijfrechten van data/points.json.')
     end
     rebuild(); sync(); notify(src, 'Reparatiepunten opgeslagen.', 'success')
+    if logAction then RepairLogEvent(logAction, logPoint, src) end
 end, false)
 
 RepairServer = {
