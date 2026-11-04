@@ -1,5 +1,6 @@
 # Changelog
 ## 1.1.0
+- Vertrek hersteld: stilsta-taak direct afbreken, standaard vrij wegwandelen en bij geblokkeerde vertrekroute overschakelen op wandelen. Dienstcontrole ongewijzigd.
 - Ped loopt na bevestiging naar de auto, voert een reparatieanimatie uit en loopt daarna terug. Timer start na aankomst; geblokkeerde route kost niets. Eén klant per monteur.
 - Optionele gedeelde netwerkped s_m_y_xmech_02 via ox_target; standaard ped, cirkel met E blijft configureerbaar, ook per punt.
 - Detectie van geparkeerde auto's en vooraf een prijsopgave met kenteken.

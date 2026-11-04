@@ -24,7 +24,8 @@ Config.Ped = {
     AnimationDict = 'mini@repair',
     AnimationClip = 'fixing_a_ped',
     WalkSpeed = 1.0, -- rustig lopen
-    LeaveDistance = 20.0, -- standaard vertrekplek voor de ped, in zijn kijkrichting
+    DepartureMode = 'wander', -- vrij wegwandelen; point = vaste richting/afstand
+    LeaveDistance = 20.0, -- afstand bij DepartureMode = point; leaveCoords krijgt voorrang
     ArrivalDistance = 1.5,
 }
 Config.AdminGroups = { admin = true, owner = true, superadmin = true, god = true }

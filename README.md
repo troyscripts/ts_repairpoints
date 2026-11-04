@@ -38,9 +38,9 @@ Parkeer met vrije loopruimte vóór de auto. Config.Ped.ApproachTimeout staat st
 De animatie is instelbaar via Config.Ped.AnimationDict en AnimationClip (standaard mini@repair / fixing_a_ped). Config.Ped.WorkDistance is de maximale serverafstand van monteur tot voertuig. De cirkelmodus gebruikt geen ped en behoudt de normale reparatietimer.
 
 ## Weglopen als de garage open is
-Zodra een monteur in dienst is, blokkeren reparaties. Een lopende aanvraag wordt afgebroken vóór betaling. De ped loopt rustig naar zijn ingestelde vertrekplek; zonder ingestelde vertrekplek loopt hij standaard 20 meter in zijn kijkrichting. Hij blijft daar bestaan en loopt terug wanneer er geen monteur meer in dienst is. Tijdens teruglopen kun je pas weer repareren wanneer hij bij zijn werkplek is.
+Zodra een monteur in dienst is, blokkeren reparaties. Een lopende aanvraag wordt afgebroken vóór betaling. De ped loopt rustig naar zijn ingestelde vertrekplek; zonder ingestelde vertrekplek wandelt hij standaard vrij weg via de GTA-looproutes. Hij blijft bestaan en loopt terug wanneer er geen monteur meer in dienst is. Met Config.Ped.DepartureMode = 'point' kun je de oude vaste richting/afstand gebruiken. Tijdens teruglopen kun je pas weer repareren wanneer hij bij zijn werkplek is.
 
-De ped wordt hierbij niet verwijderd, opnieuw gespawned of geteleporteerd. Het is één gedeelde netwerkped per punt. Normale FiveM-streaming bepaalt of spelers op grote afstand hem zien. Kies bereikbare vertrekplekken: de GTA-navmesh kan niet door muren/gesloten deuren lopen. Bij een geblokkeerde route probeert hij opnieuw zonder te teleporteren.
+De ped wordt hierbij niet verwijderd, opnieuw gespawned of geteleporteerd. Het is één gedeelde netwerkped per punt. Normale FiveM-streaming bepaalt of spelers op grote afstand hem zien. Kies bereikbare vertrekplekken: de GTA-navmesh kan niet door muren/gesloten deuren lopen. Als een ingestelde vertrekroute minstens vijf seconden geen voortgang oplevert, schakelt hij over op vrij wandelen. De stilsta-taak wordt bij vertrek direct afgebroken. Er wordt niet geteleporteerd.
 
 Marker-punten verbergen de cirkel als de garage open is. Blips verdwijnen eveneens. Dienststatus wordt standaard elke 2 seconden ververst; aanvragen controleren ook rechtstreeks op de server.
 

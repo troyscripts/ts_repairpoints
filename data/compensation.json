@@ -1,0 +1,16 @@
+{
+    "nextId": 2,
+    "records": [
+        {
+            "paidAt": 1793806758,
+            "status": "paid",
+            "createdAt": 1793806758,
+            "society": "society_police",
+            "identifier": "steam1:1f9186c84e423d2239836f320c5d083411ffedae",
+            "id": 1,
+            "account": "bank",
+            "amount": 10000,
+            "point": "placed_1793806725"
+        }
+    ]
+}

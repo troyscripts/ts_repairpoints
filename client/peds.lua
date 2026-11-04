@@ -26,13 +26,24 @@ local function destination(p, away)
     local h = math.rad(p.heading or Config.Ped.Heading)
     return R.position(p) + vector3(-math.sin(h) * Config.Ped.LeaveDistance, math.cos(h) * Config.Ped.LeaveDistance, 0.0)
 end
+local function wander(entry)
+    local ped = entry.entity
+    FreezeEntityPosition(ped, false)
+    ClearPedTasksImmediately(ped) -- breek de oneindige stilsta-taak direct af
+    TaskWanderStandard(ped, 10.0, 10)
+    SetPedKeepTask(ped, true)
+    entry.phase, entry.destination, entry.lastTask = 'wandering', nil, GetGameTimer()
+    entry.progressAt, entry.progressPosition = GetGameTimer(), GetEntityCoords(ped)
+end
 local function walk(entry, p, away)
+    if away and not p.leaveCoords and Config.Ped.DepartureMode ~= 'point' then wander(entry); return end
     local dest = destination(p, away)
     FreezeEntityPosition(entry.entity, false)
-    ClearPedTasks(entry.entity)
+    ClearPedTasksImmediately(entry.entity)
     TaskFollowNavMeshToCoord(entry.entity, dest.x, dest.y, dest.z, Config.Ped.WalkSpeed, -1, Config.Ped.ArrivalDistance, false, p.heading or Config.Ped.Heading)
     SetPedKeepTask(entry.entity, true)
     entry.phase, entry.destination, entry.lastTask = away and 'leaving' or 'returning', dest, GetGameTimer()
+    entry.progressAt, entry.progressPosition = GetGameTimer(), GetEntityCoords(entry.entity)
 end
 function R.workSpot(vehicle)
     local _, maximum = GetModelDimensions(GetEntityModel(vehicle))
@@ -98,6 +109,23 @@ local function updatePed(entry, p)
     local away, desired = R.locked, destination(p, R.locked)
     if away ~= entry.away or (entry.destination and #(entry.destination - desired) > 0.2) then
         entry.away = away; walk(entry, p, away)
+    end
+    if entry.phase == 'wandering' then
+        -- Geen thuisafstand-correctie tijdens vertrek: die zou het wandelen steeds onderbreken.
+        if GetGameTimer() - entry.progressAt >= 8000 then
+            local current = GetEntityCoords(ped)
+            if #(current - entry.progressPosition) < 0.4 then wander(entry)
+            else entry.progressAt, entry.progressPosition = GetGameTimer(), current end
+        end
+        return
+    end
+    if entry.phase == 'leaving' and GetGameTimer() - entry.progressAt >= 5000 then
+        local current = GetEntityCoords(ped)
+        if #(current - entry.progressPosition) < 0.4 then
+            print('[ts_repairpoints] Vertrekroute geblokkeerd bij ' .. entry.id .. '; monteur wandelt vrij weg.')
+            wander(entry); return
+        end
+        entry.progressAt, entry.progressPosition = GetGameTimer(), current
     end
     if entry.phase == 'leaving' or entry.phase == 'returning' then
         if #(GetEntityCoords(ped) - desired) <= Config.Ped.ArrivalDistance then
