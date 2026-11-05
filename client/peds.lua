@@ -8,17 +8,41 @@ local function detach(id)
     R.peds[id] = nil
 end
 local function addTarget(id, entry)
+    -- ox_target:addEntity negeert netIds die nog niet op deze client bestaan.
+    -- Markeer de registratie pas nadat de ped werkelijk is ingeladen.
+    if GetResourceState('ox_target') ~= 'started'
+        or not NetworkDoesEntityExistWithNetworkId(entry.netId) then return false end
+    local entity = NetToPed(entry.netId)
+    if entity == 0 or not DoesEntityExist(entity) then return false end
+    entry.entity = entity
     exports.ox_target:addEntity(entry.netId, {{
         name = option, icon = 'fa-solid fa-screwdriver-wrench', label = 'Reparatieprijs opvragen',
         distance = Config.Ped.TargetDistance,
         canInteract = function(entity)
             local p = R.points[id]
-            return p and not p.repairJob and not R.locked and not R.active and not IsEntityDead(entity)
-                and #(GetEntityCoords(entity) - R.position(p)) <= Config.Ped.ArrivalDistance
+            -- Beschikbaarheid bij selecteren uitleggen; verberg geen optie zonder reden.
+            return p ~= nil and not IsEntityDead(entity)
                 and not IsPedInAnyVehicle(PlayerPedId(), false)
         end,
-        onSelect = function() R.repair(id) end,
+        onSelect = function(data)
+            local p = R.points[id]
+            if not p then return R.notify('Dit reparatiepunt is niet meer beschikbaar.') end
+            if R.locked then return R.notify('Er is een monteur in dienst. Ga naar de garage.') end
+            if R.active then return R.notify('Je hebt al een reparatieaanvraag openstaan.') end
+            if p.repairJob then return R.notify('Deze monteur helpt al iemand anders.') end
+            local ped = data and data.entity or entry.entity
+            if not ped or not DoesEntityExist(ped) or IsEntityDead(ped) then
+                return R.notify('Deze monteur is niet beschikbaar.')
+            end
+            -- Dezelfde tolerantie als RepairPedAvailable op de server.
+            if #(GetEntityCoords(ped) - R.position(p)) > Config.Ped.ArrivalDistance + 0.75 then
+                return R.notify('De monteur is nog niet terug op zijn plek. Wacht tot hij terug is.')
+            end
+            R.repair(id)
+        end,
     }})
+    entry.targetRegistered, entry.targetEntity = true, entity
+    return true
 end
 local function destination(p, away)
     if not away then return R.position(p) end
@@ -148,8 +172,15 @@ CreateThread(function()
             if not p or R.mode(p) ~= 'ped' or p.pedNetId ~= entry.netId then detach(id)
             elseif NetworkDoesEntityExistWithNetworkId(entry.netId) then
                 entry.entity = NetToPed(entry.netId)
-                updatePed(entry, p)
-            else entry.controlled = false end
+                if entry.entity ~= 0 and DoesEntityExist(entry.entity) then
+                    if targetReady and (not entry.targetRegistered or entry.targetEntity ~= entry.entity) then
+                        addTarget(id, entry)
+                    end
+                    updatePed(entry, p)
+                end
+            else
+                entry.controlled, entry.targetRegistered, entry.targetEntity = false, false, nil
+            end
         end
         for id, p in pairs(R.points) do
             if R.mode(p) == 'ped' then
@@ -166,8 +197,37 @@ CreateThread(function()
     end
 end)
 AddEventHandler('onClientResourceStart', function(name)
-    if name == 'ox_target' then for id, entry in pairs(R.peds) do addTarget(id, entry) end end
+    if name == 'ox_target' then
+        for id, entry in pairs(R.peds) do
+            entry.targetRegistered = false
+            addTarget(id, entry) -- niet ingeladen: de reguliere lus probeert later opnieuw
+        end
+    end
 end)
 AddEventHandler('onResourceStop', function(name)
     if name == GetCurrentResourceName() then for id in pairs(R.peds) do detach(id) end end
+    if name == 'ox_target' then
+        for _, entry in pairs(R.peds) do entry.targetRegistered, entry.targetEntity = false, nil end
+    end
 end)
+
+RegisterCommand('reparatietargetcheck', function()
+    print(('[ts_repairpoints] versie=%s ox_target=%s locked=%s active=%s'):format(
+        GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'onbekend',
+        GetResourceState('ox_target'), tostring(R.locked), tostring(R.active ~= nil)))
+    local count = 0
+    for id, p in pairs(R.points) do
+        if R.mode(p) == 'ped' then
+            count = count + 1
+            local entry = R.peds[id]
+            local loaded = p.pedNetId and NetworkDoesEntityExistWithNetworkId(p.pedNetId)
+            local ped = loaded and NetToPed(p.pedNetId) or 0
+            local distance = ped ~= 0 and #(GetEntityCoords(ped) - R.position(p)) or -1
+            print(('[ts_repairpoints] punt=%s netId=%s target=%s ingeladen=%s afstand=%.2f bezig=%s'):format(
+                id, tostring(p.pedNetId), tostring(entry and entry.targetRegistered == true or false), tostring(loaded == true),
+                distance, tostring(p.repairJob ~= nil)))
+        end
+    end
+    print(('[ts_repairpoints] %s ped-punten ontvangen.'):format(count))
+    R.notify('Targetdiagnose staat in F8. Stuur de regels met [ts_repairpoints] mee.', 'inform')
+end, false)
