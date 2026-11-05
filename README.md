@@ -1,4 +1,4 @@
-# ts_repairpoints — 1.1.2
+# ts_repairpoints — 1.1.3
 Reparatiepunten voor ESX met een optionele monteur-ped, ox_target, schadeafhankelijke prijzen en societybetalingen via ts_bridge. Nederlandse bediening.
 
 ## Installeren / bijwerken
@@ -97,7 +97,7 @@ Er is geen aangenomen Sky-export gebruikt. Als jullie Sky-versie uitsluitend een
 ## Versiechecker
 Config.UpdateCheck staat standaard aan voor `troyscripts/ts_repairpoints`, branch `main`. De checker leest uitsluitend de version-regel uit het publieke fxmanifest.lua op GitHub. Geen extra version.json nodig, geen code-uitvoering of automatische installatie. Controle bij opstart en standaard elke 6 uur (IntervalHours = 0: alleen opstart). HTTP-fouten/time-outs stoppen de resource niet.
 
-Wanneer deze lokale 1.1.2 nog niet op GitHub staat, meldt de checker terecht dat lokaal nieuwer is dan online. Zodra je de update uploadt naar main, gebruikt de checker dat nieuwe manifest. Deze zip publiceert zichzelf niet op GitHub.
+Wanneer deze lokale 1.1.3 nog niet op GitHub staat, meldt de checker terecht dat lokaal nieuwer is dan online. Zodra je de update uploadt naar main, gebruikt de checker dat nieuwe manifest. Deze zip publiceert zichzelf niet op GitHub.
 
 ## Betalingsherstel en gegevens bewaren
 Reparatiebetalingen gebruiken de gecontroleerde ts_bridge-resultaten `{ ok, uncertain }`. Bij een bevestigde mislukte mechanic-bijschrijving wordt terugbetaling geprobeerd. Onzekere uitkomsten stoppen automatische herhaling en geven BETALING CONTROLEREN in de console.
@@ -128,3 +128,11 @@ Bewaar de volledige map data bij updates. Config/config.lua blijft op schema 1.1
 Test op de testserver: normale reparatie, tijdelijk verlies van voertuigcontrole, disconnect na betaling, /reparatieherstel, onbereikbare society, resourceherstart met open dossier en een niet-schrijfbare data-map. Controleer telkens dat er maximaal één betaling plaatsvindt. Visuele vervorming en banden worden op de client hersteld; de server bevestigt motor en carrosserie via OneSync.
 
 De meegeleverde regressietests draaien met `python3 tests/run_lua.py` (Python 3 en liblua5.4). Ze simuleren de betaalroute, afleverbevestiging, herstel en foutgevallen; de in-game controle blijft nodig.
+
+## Targetherstel (1.1.3)
+
+De optie `Reparatieprijs opvragen` wordt pas bij ox_target aangemeld wanneer de netwerkped op de client is ingeladen. Na uit-/instreamen of een ox_target-herstart wordt de registratie opnieuw opgebouwd. Een levende ped toont de optie aan spelers te voet; na selecteren volgt een melding wanneer de monteur bezig, onderweg of wegens een monteur in dienst niet beschikbaar is. De server blijft deze voorwaarden controleren. De standplaatstolerantie is aan beide kanten gelijk.
+
+Ontbreekt de optie nog steeds? Gebruik `/reparatietargetcheck` en bekijk F8: versie, ox_target-status, ontvangen ped-punten, targetregistratie, ingeladen status, standplaatsafstand en bezetting worden getoond. Deze diagnose wijzigt niets en voert geen betaling uit.
+
+Bijwerken vanaf 1.1.2: vervang fxmanifest.lua, client/main.lua en client/peds.lua. Configschema blijft 1.1.1. Bewaar je config en de volledige data-map. Test ook opnieuw inloggen bij een bestaande ped en ox_target herstarten terwijl de ped buiten bereik is.

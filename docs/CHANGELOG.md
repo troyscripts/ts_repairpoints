@@ -1,3 +1,11 @@
+# 1.1.3 — 2026-11-05
+
+- Targetregistratie wacht op een ingeladen netwerkped; een vroege, door ox_target genegeerde aanmelding wordt opnieuw geprobeerd.
+- Registratie wordt hersteld na uit-/instreamen en ox_target-herstart.
+- Beschikbaarheidsredenen worden bij selecteren gemeld; de optie verdwijnt niet stil bij een levende ped.
+- Client-/serverstandplaatstolerantie gelijkgetrokken; dienst- en betaalcontroles blijven behouden.
+- /reparatietargetcheck toegevoegd voor diagnose in F8. Configschema blijft 1.1.1.
+
 # 1.1.2 — 2026-11-05
 - Betaling en aflevering afzonderlijk vastgelegd in data/repairs.json.
 - Voertuigcontrole na betaling opnieuw aangevraagd; server bevestigt motor/carrosserie na reparatie.

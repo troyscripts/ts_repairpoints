@@ -115,7 +115,9 @@ local function opValid(op)
         and #(GetEntityCoords(op.vehicle) - R.position(p)) <= Config.Radius + 0.5
 end
 function R.repair(id)
-    if R.active or recovering or R.locked then return end
+    if R.active then return R.notify('Je hebt al een reparatieaanvraag openstaan.') end
+    if recovering then return R.notify('Wacht tot het herstel van je betaalde reparatie klaar is.') end
+    if R.locked then return R.notify('Er is een monteur in dienst. Ga naar de garage.') end
     local p = R.points[id]
     if not p then return end
     local vehicle
