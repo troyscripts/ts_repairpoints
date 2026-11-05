@@ -1,4 +1,4 @@
-# ts_repairpoints — 1.1.1
+# ts_repairpoints — 1.1.2
 Reparatiepunten voor ESX met een optionele monteur-ped, ox_target, schadeafhankelijke prijzen en societybetalingen via ts_bridge. Nederlandse bediening.
 
 ## Installeren / bijwerken
@@ -97,14 +97,14 @@ Er is geen aangenomen Sky-export gebruikt. Als jullie Sky-versie uitsluitend een
 ## Versiechecker
 Config.UpdateCheck staat standaard aan voor `troyscripts/ts_repairpoints`, branch `main`. De checker leest uitsluitend de version-regel uit het publieke fxmanifest.lua op GitHub. Geen extra version.json nodig, geen code-uitvoering of automatische installatie. Controle bij opstart en standaard elke 6 uur (IntervalHours = 0: alleen opstart). HTTP-fouten/time-outs stoppen de resource niet.
 
-Wanneer deze lokale 1.1.1 nog niet op GitHub staat, meldt de checker terecht dat lokaal nieuwer is dan online. Zodra je de update uploadt naar main, gebruikt de checker dat nieuwe manifest. Deze zip publiceert zichzelf niet op GitHub.
+Wanneer deze lokale 1.1.2 nog niet op GitHub staat, meldt de checker terecht dat lokaal nieuwer is dan online. Zodra je de update uploadt naar main, gebruikt de checker dat nieuwe manifest. Deze zip publiceert zichzelf niet op GitHub.
 
 ## Betalingsherstel en gegevens bewaren
 Reparatiebetalingen gebruiken de gecontroleerde ts_bridge-resultaten `{ ok, uncertain }`. Bij een bevestigde mislukte mechanic-bijschrijving wordt terugbetaling geprobeerd. Onzekere uitkomsten stoppen automatische herhaling en geven BETALING CONTROLEREN in de console.
 
 Schadevergoedingen staan in `data/compensation.json`. `pending` wacht op saldo/beschikbare rekening; `credit_pending` is al geïnd en wacht alleen op bijschrijving. `paid` is afgerond. `review` vereist dat staff de bank- en societyboekingen controleert; er vindt dan geen automatische tweede afschrijving plaats. Ook een crash tijdens een geldmutatie wordt bij herstart voor controle gemarkeerd. Betaalde dossiers blijven als administratie bewaard.
 
-Verwijder of overschrijf compensation.json niet bij updates: daardoor zouden schulden en de controlehistorie verloren gaan. Bewaar eveneens points.json. Er is geen automatische database-atoomtransactie over speler en society; bij crashes/onzekere bridge-uitkomsten kan handmatige afhandeling nodig zijn. Verander dossierstatussen pas na controle van de echte boekingen. Bij een verdwenen voertuig/disconnect direct na een geslaagde reparatiebetaling kan staffherstel nodig zijn.
+Verwijder of overschrijf compensation.json niet bij updates: daardoor zouden schulden en de controlehistorie verloren gaan. Bewaar eveneens points.json en repairs.json. Er is geen automatische database-atoomtransactie over speler en society; bij crashes/onzekere bridge-uitkomsten kan handmatige afhandeling nodig zijn. Verander dossierstatussen pas na controle van de echte boekingen. Na betaling probeert de client voertuigcontrole opnieuw te verkrijgen en bevestigt de server de motor-/carrosseriegezondheid. Gebruik bij een onderbreking binnen 2 minuten `/reparatieherstel` bij dezelfde auto; dit schrijft nooit opnieuw geld af. Dit werkt ook na opnieuw verbinden zolang dezelfde resource-runtime en hetzelfde voertuig nog bestaan. Bij gewijzigde schade, een verdwenen voertuig of een resourceherstart controleert staff het dossier; er volgt geen blinde terugbetaling.
 
 ## Validatie
 Lua 5.4-syntax en gesimuleerde scenario's gecontroleerd voor prijsgrenzen, societyboekingen, offerteverloop, beide interacties, dienstwisselingen, voertuigslots, pedbeweging/eigenaarmigratie, moord/aanrijding, dubbele doodmeldingen, schuldinning, herstart en versiecheckerfouten. Geen live FiveM-test uitgevoerd.
@@ -113,3 +113,18 @@ Test vóór livegebruik: beide interacties; dichtbij/te ver geparkeerde auto; of
 
 ## Webhooks
 Zie [docs/WEBHOOKS.md](docs/WEBHOOKS.md) voor de drie routes en foto-instellingen. Gebruik ts_bridge 1.1.4.
+
+### Reparatiedossiers (1.1.2)
+
+`data/repairs.json` bewaart de speleridentifier, het kenteken, bedrag, betaalaccount, society en de betaal-/afleverstatus. Het bestand wordt vóór betaling opgeslagen. Bij een schrijffout start geen betaling. Een open dossier blokkeert nieuwe reparatiebetalingen voor hetzelfde personage, ook na opnieuw verbinden. Onzekere uitkomsten en niet-afgeronde dossiers na een resourceherstart vereisen controle.
+
+Alleen vanuit de serverconsole:
+
+- `reparatiedossier lijst`: toon open dossiers.
+- `reparatiedossier sluiten [id] [reden]`: sluit na controle van de daadwerkelijke boekingen en het voertuig. Dit command voert zelf geen terugbetaling uit. Staff verwerkt een eventuele vergoeding via het bestaande beheersysteem en vermeldt die in de reden.
+
+Bewaar de volledige map data bij updates. Config/config.lua blijft op schema 1.1.1; er zijn geen nieuwe configuratievelden of SQL-wijzigingen.
+
+Test op de testserver: normale reparatie, tijdelijk verlies van voertuigcontrole, disconnect na betaling, /reparatieherstel, onbereikbare society, resourceherstart met open dossier en een niet-schrijfbare data-map. Controleer telkens dat er maximaal één betaling plaatsvindt. Visuele vervorming en banden worden op de client hersteld; de server bevestigt motor en carrosserie via OneSync.
+
+De meegeleverde regressietests draaien met `python3 tests/run_lua.py` (Python 3 en liblua5.4). Ze simuleren de betaalroute, afleverbevestiging, herstel en foutgevallen; de in-game controle blijft nodig.
