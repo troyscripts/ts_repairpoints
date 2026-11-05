@@ -1,3 +1,11 @@
+# 1.1.2 — 2026-11-05
+- Betaling en aflevering afzonderlijk vastgelegd in data/repairs.json.
+- Voertuigcontrole na betaling opnieuw aangevraagd; server bevestigt motor/carrosserie na reparatie.
+- /reparatieherstel hervat binnen twee minuten zonder tweede betaling, ook na een reconnect in dezelfde resource-runtime.
+- Open/onzekere dossiers blijven bewaard en blokkeren dubbele betaling; console-afhandeling na handmatige controle.
+- Terugbetaling controleert de ontvangeridentifier om hergebruik van een speler-ID af te vangen.
+- Configschema blijft 1.1.1; bewaar eigen config en de volledige data-map.
+
 # 1.1.1 — 2026-11-04
 
 - Webhookdiagnose: geweigerde bridge-aanvragen worden niet langer stil genegeerd. Consolecontrole ts_repairpoints_webhookcheck toont schakelaars, resourcenaam en laatste resultaat per route.

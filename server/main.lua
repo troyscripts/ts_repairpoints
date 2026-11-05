@@ -92,16 +92,21 @@ lib.callback.register('ts_repairpoints:quote', function(src, id, netId)
     if requests[src] and now - requests[src] < 2 then return false, 'Even wachten.' end
     requests[src] = now
     if sessions[src] then return false, 'Je hebt al een reparatieaanvraag openstaan.' end
+    if RepairSettlementPending(src) then return false, 'Er staat een reparatiedossier open. Gebruik /reparatieherstel of neem contact op met staff.' end
     if (cooldowns[src] or 0) > now or (vehicleCooldowns[netId] or 0) > now then return false, 'Wacht even voor een nieuwe reparatie.' end
     local xp, err, vehicle = valid(src, id, netId)
     if not xp then return false, err end
     if (points[id].interaction or Config.Interaction) == 'ped' and pointLocks[id] then return false, 'Deze monteur helpt al iemand anders.' end
+    if RepairSettlementVehiclePending(vehicle) then return false, 'Dit voertuig heeft nog een open reparatiedossier.' end
     if vehicleLocks[netId] then return false, 'Dit voertuig heeft al een reparatieaanvraag.' end
     local quote, reason = RepairVehicleQuote(vehicle)
     if not quote then return false, reason end
     local ready, paymentError = RepairPaymentReady(src, quote.price)
     if not ready then return false, paymentError end
+    if not RepairSettlementSamePlayer(src, { identifier = xp.identifier }) then return false, 'Speler niet meer beschikbaar.' end
+    if sessions[src] or vehicleLocks[netId] or RepairSettlementPending(src) or RepairSettlementVehiclePending(vehicle) then return false, 'Er loopt al een reparatieaanvraag.' end
     sequence = sequence + 1
+    quote.identifier = xp.identifier
     quote.id, quote.netId, quote.token = id, netId, sequence
     quote.vehicle, quote.model = vehicle, GetEntityModel(vehicle)
     quote.plate = GetVehicleNumberPlateText(vehicle)
@@ -157,11 +162,20 @@ lib.callback.register('ts_repairpoints:finish', function(src, token)
     end
     if GetGameTimer() - s.started < Config.Duration then release(src); return false, 'Reparatie nog niet voltooid.' end
     s.phase = 'payment' -- replay blokkeren vóór bankexports, voertuigslot behouden
-    local paid, paymentError = RepairPayment(src, s.price)
-    release(src)
-    if not paid then return false, paymentError end
-    cooldowns[src], vehicleCooldowns[s.netId] = os.time() + Config.Cooldown, os.time() + Config.Cooldown
-    return true, { netId = s.netId, price = s.price }
+    if not RepairSettlementSamePlayer(src, s) then release(src); return false, 'Speler niet meer beschikbaar.' end
+    local dossier = RepairSettlementCreate(src, s)
+    if not dossier then release(src); return false, 'Betaaldossier kon niet worden opgeslagen. Er is niets afgeschreven.' end
+    local ok, paid, paymentError, uncertain = pcall(RepairPayment, src, s.price, dossier)
+    if not ok then
+        paid, paymentError, uncertain = false, 'Onverwachte betaalfout; laat staff de boekingen controleren.', true
+    end
+    local saved = RepairSettlementResult(dossier, paid, paymentError, uncertain)
+    -- Een disconnect kan de sessie hebben verwijderd; raak geen nieuwere sessie aan.
+    if sessions[src] == s then release(src) end
+    if not saved then return false, (paymentError or 'Betaalresultaat vereist controle.') .. ' Dossier ' .. dossier.id end
+    if RepairSettlementSamePlayer(src, dossier) then cooldowns[src] = os.time() + Config.Cooldown end
+    vehicleCooldowns[s.netId] = os.time() + Config.Cooldown
+    return true, { netId = s.netId, price = s.price, dossier = dossier.id }
 end)
 AddEventHandler('playerDropped', function()
     release(source)

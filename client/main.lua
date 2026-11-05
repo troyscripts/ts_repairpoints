@@ -67,6 +67,36 @@ local function control(vehicle)
     until GetGameTimer() > expires
     return false
 end
+local recovering = false
+local function deliverRepair()
+    local ok, result = lib.callback.await('ts_repairpoints:recover', false)
+    if not ok then return R.notify(result or 'Gebruik /reparatieherstel om de betaalde reparatie te hervatten.') end
+    if result.complete then return R.notify('De betaalde reparatie is bevestigd.', 'success') end
+    local vehicle = NetworkDoesEntityExistWithNetworkId(result.netId) and NetToVeh(result.netId) or 0
+    if vehicle == 0 or not control(vehicle) or GetEntityModel(vehicle) ~= result.model
+        or GetVehicleNumberPlateText(vehicle) ~= result.plate then
+        return R.notify('Voertuigcontrole ontbreekt. Gebruik binnen 2 minuten /reparatieherstel bij dezelfde auto. Dossier ' .. result.dossier)
+    end
+    SetVehicleFixed(vehicle); SetVehicleDeformationFixed(vehicle)
+    FreezeEntityPosition(vehicle, false)
+    SetVehicleEngineHealth(vehicle, 1000.0); SetVehicleBodyHealth(vehicle, 1000.0)
+    SetVehiclePetrolTankHealth(vehicle, 1000.0); SetVehicleUndriveable(vehicle, false)
+    for _, tyre in ipairs({0, 1, 2, 3, 4, 5, 45, 47}) do SetVehicleTyreFixed(vehicle, tyre) end
+    -- OneSync-schadewaarden kunnen later aankomen dan de clientbevestiging.
+    for attempt = 1, 5 do
+        local confirmed = lib.callback.await('ts_repairpoints:confirmed', false, result.dossier)
+        if confirmed then return R.notify(('Voertuig gerepareerd voor €%s.'):format(result.price), 'success') end
+        Wait(500)
+    end
+    R.notify('Reparatie uitgevoerd, bevestiging ontbreekt. Gebruik /reparatieherstel. Dossier ' .. result.dossier)
+end
+RegisterCommand('reparatieherstel', function()
+    if R.active or recovering then return end
+    recovering = true
+    local ok = pcall(deliverRepair)
+    recovering = false
+    if not ok then R.notify('Herstelverbinding mislukt. Probeer /reparatieherstel opnieuw; er wordt niet opnieuw betaald.') end
+end, false)
 local function opValid(op)
     local p = R.points[op.id]
     if not p or R.locked or IsEntityDead(PlayerPedId()) or not DoesEntityExist(op.vehicle) then return false end
@@ -85,7 +115,7 @@ local function opValid(op)
         and #(GetEntityCoords(op.vehicle) - R.position(p)) <= Config.Radius + 0.5
 end
 function R.repair(id)
-    if R.active or R.locked then return end
+    if R.active or recovering or R.locked then return end
     local p = R.points[id]
     if not p then return end
     local vehicle
@@ -150,14 +180,7 @@ function R.repair(id)
         op.payment = true
         local paid, result = lib.callback.await('ts_repairpoints:finish', false, op.token)
         if not paid then return R.notify(result or 'Reparatie geweigerd.') end
-        if not DoesEntityExist(vehicle) or NetworkGetNetworkIdFromEntity(vehicle) ~= result.netId or not NetworkHasControlOfEntity(vehicle) then
-            return R.notify('Betaling verwerkt, maar voertuig niet meer beschikbaar. Neem contact op met staff.')
-        end
-        SetVehicleFixed(vehicle); SetVehicleDeformationFixed(vehicle)
-        SetVehicleEngineHealth(vehicle, 1000.0); SetVehicleBodyHealth(vehicle, 1000.0)
-        SetVehiclePetrolTankHealth(vehicle, 1000.0); SetVehicleUndriveable(vehicle, false)
-        for _, tyre in ipairs({0, 1, 2, 3, 4, 5, 45, 47}) do SetVehicleTyreFixed(vehicle, tyre) end
-        R.notify(('Voertuig gerepareerd voor €%s.'):format(result.price), 'success')
+        deliverRepair()
     end, debug.traceback)
     if op.walkUI then lib.hideTextUI() end
     if op.token then TriggerServerEvent('ts_repairpoints:cancel', op.token) end
@@ -165,7 +188,7 @@ function R.repair(id)
     if op.abortMessage then R.notify(op.abortMessage) end
     if not success then
         print(('[ts_repairpoints] Reparatiefout: %s'):format(failure))
-        R.notify(op.payment and 'Verbinding verbroken tijdens betaling. Laat staff de boeking controleren.' or 'Reparatie mislukt. Probeer opnieuw.')
+        R.notify(op.payment and 'Verbinding verbroken tijdens betaling. Gebruik /reparatieherstel; laat staff zo nodig het dossier controleren.' or 'Reparatie mislukt. Probeer opnieuw.')
     end
     R.active = nil
 end
